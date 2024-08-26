@@ -39,7 +39,7 @@ jobs:
           python TransformWiki.py
           git status
           git add -A
-          git commit -m "Transformed markdown to AzureDevOps wiki"
+          git commit --allow-empty -m "Transformed markdown to AzureDevOps wiki"
 
       - name: Publish updated wiki
         run: |
