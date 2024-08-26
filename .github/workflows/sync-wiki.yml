@@ -1,0 +1,46 @@
+name: Sync Wiki
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'wiki-transform'
+  gollum:
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repository wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki.git
+          ref: master
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Add Azure DevOps repository as secondary remote
+        run: |
+          git remote add azure https://fhi:${{ secrets.AZURE_DEVOPS_PAT }}@dev.azure.com/fhi/Fhi.Felles/_git/Fhi.Guidelines.Wiki
+
+      - name: Merge changes and push to Azure DevOps
+        run: |
+          git fetch origin
+          git checkout --track origin/wikiMaster
+          git merge master --no-edit --allow-unrelated-histories --strategy-option theirs
+
+      - name: Transform wiki to be supported on Azure DevOps
+        run: |
+          python TransformWiki.py
+          git status
+          git add -A
+          git commit -m "Transformed markdown to AzureDevOps wiki"
+
+      - name: Publish updated wiki
+        run: |
+          git push azure wikiMaster --force
